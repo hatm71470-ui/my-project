@@ -1,0 +1,62 @@
+// Prisma schema for the Lost & Found application
+//
+// SQLite has no native enum support, so Role/ReportType/ReportStatus are
+// stored as String and validated against the unions in src/lib/types.ts:
+//   Role:         "USER" | "ADMIN"
+//   ReportType:   "LOST" | "FOUND"
+//   ReportStatus: "PENDING" | "PUBLISHED" | "RESOLVED" | "REJECTED"
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  role         String   @default("USER")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reports Report[]
+}
+
+model Report {
+  id     String @id @default(cuid())
+  type   String
+  status String @default("PENDING")
+
+  title       String
+  description String
+  category    String
+  brand       String?
+  color       String?
+
+  city            String
+  locationDetails String?
+
+  eventDate DateTime
+  images    String   @default("[]") // JSON-encoded array of image URLs
+
+  contactName  String
+  contactPhone String
+  contactEmail String?
+  hideContact  Boolean @default(false)
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type, status])
+  @@index([category])
+  @@index([city])
+}
